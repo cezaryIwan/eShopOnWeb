@@ -56,11 +56,17 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_424B88A6C56347F4B32914E7356D4F73 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4BFD0752534947EFB48E9C9F8F076738 }}
 
+      - name: Build & publish .NET app
+        run: |
+          cd src/Web
+          dotnet publish -c Release -o publish
+
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'eShopOnWebWeb'
-          slot-name: 'Production'
-          package: .
+          slot-name: 'staging'
+          package: src/Web/publish
           
