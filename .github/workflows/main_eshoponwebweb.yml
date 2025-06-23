@@ -59,7 +59,7 @@ jobs:
       - name: Build & publish .NET app
         run: |
           cd src/Web
-          dotnet publish -c Release -o publish
+          dotnet publish Web.csproj -c Release -o publish
 
 
       - name: Deploy to Azure Web App
