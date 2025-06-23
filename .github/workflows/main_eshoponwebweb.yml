@@ -18,27 +18,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Set up .NET Core 9.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: '9.0.x' # Użyj 9.0.x, aby GitHub Actions wybrał najnowszą dostępną wersję 9.0
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      # --- Build Web Project ---
+      - name: Restore Web dependencies
+        run: dotnet restore src/Web/Web.csproj # Wskazujemy konkretny projekt
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+      - name: Build Web project
+        run: dotnet build src/Web/Web.csproj --configuration Release --no-restore # Wskazujemy konkretny projekt i pomijamy restore
+
+      - name: Publish Web project
+        run: dotnet publish src/Web/Web.csproj --configuration Release --no-build --output ${{ github.workspace }}/myapp # Wskazujemy konkretny projekt i ścieżkę wyjściową
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: .net-app # Nazwa artefaktu (spakowanego wyniku publikacji)
+          path: ${{ github.workspace }}/myapp # Ścieżka do opublikowanej aplikacji
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build
-    
+    needs: build # Ten job zależy od pomyślnego zakończenia joba 'build'
+
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -47,8 +51,9 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
-      
+          name: .net-app # Pobieramy artefakt opublikowany w jobie 'build'
+          path: . # Pobieramy go do katalogu głównego joba 'deploy' (github.workspace)
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -56,17 +61,14 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_424B88A6C56347F4B32914E7356D4F73 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4BFD0752534947EFB48E9C9F8F076738 }}
 
-      - name: Build & publish .NET app
-        run: |
-          cd src/Web
-          dotnet publish Web.csproj -c Release -o publish
-
+      # --- Usunięta sekcja "Build & publish .NET app" ---
+      # Ta sekcja jest zbędna i błędna, ponieważ artefakt (.net-app) już zawiera opublikowane pliki.
+      # Nie ma potrzeby ponownie budować i publikować w jobie 'deploy'.
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'eShopOnWebWeb'
-          slot-name: 'staging'
-          package: src/Web/publish
-          
+          app-name: 'eShopOnWebWeb' # Twoja nazwa App Service
+          slot-name: 'staging' # Slot, na który wdrażasz
+          package: . # Ścieżka do opublikowanej aplikacji, która została pobrana jako artefakt do katalogu bieżącego joba
