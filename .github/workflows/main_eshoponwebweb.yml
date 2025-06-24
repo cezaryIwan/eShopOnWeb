@@ -32,9 +32,6 @@ jobs:
 
       - name: Publish Web project
         run: dotnet publish src/Web/Web.csproj --configuration Release --no-build --output ${{ github.workspace }}/myapp # Wskazujemy konkretny projekt i ścieżkę wyjściową
-
-      - name: List published files
-        run: ls -lR ${{ github.workspace }}/myapp 
         
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
